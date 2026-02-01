@@ -14,6 +14,8 @@ An MCP (Model Context Protocol) server that lets AI assistants interact with Squ
 | `listMessages` | Read chat history |
 | `listLiveGames` | Browse live NBA/NFL games from ESPN |
 | `checkScore` | Get the live score for a specific ESPN game |
+| `askChatGPT` | Ask ChatGPT a question and post its reply to the game chat |
+| `askGemini` | Ask Gemini a question and post its reply to the game chat |
 
 ## Setup
 
@@ -32,7 +34,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "node",
       "args": ["/absolute/path/to/sb2026/index.js"],
       "env": {
-        "SQUAD_SQUARES_API": "http://localhost:8000"
+        "SQUAD_SQUARES_API": "http://localhost:8000",
+        "OPENAI_API_KEY": "your-openai-key",
+        "GOOGLE_API_KEY": "your-google-key"
       }
     }
   }
@@ -46,6 +50,8 @@ Restart Claude Desktop after saving.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SQUAD_SQUARES_API` | `http://localhost:8000` | Base URL of the Squad Squares backend |
+| `OPENAI_API_KEY` | — | OpenAI API key (enables `askChatGPT` tool) |
+| `GOOGLE_API_KEY` | — | Google AI API key (enables `askGemini` tool) |
 
 ## Usage
 
@@ -56,3 +62,5 @@ Once configured, ask Claude Desktop things like:
 - "What's the current score?"
 - "Send a message saying 'Let's go!' to the game chat"
 - "What NBA games are live right now?"
+- "Ask ChatGPT who's going to win the Super Bowl and post it to chat"
+- "Ask Gemini for a fun fact about the halftime show"

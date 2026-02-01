@@ -1,7 +1,7 @@
 {
-  "name": "squad-squares-mcp",
+  "name": "super-bowl-squares",
   "version": "1.0.0",
-  "description": "MCP server for Squad Squares — claim squares, chat, and track live scores via Claude Desktop",
+  "description": "MCP server for Super Bowl Squares — claim squares, chat, and track live scores via Claude Desktop",
   "type": "module",
   "main": "index.js",
   "scripts": {

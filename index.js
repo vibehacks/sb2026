@@ -5,9 +5,10 @@
  * interact with a Squad Squares game: claim squares, chat, check scores,
  * and browse live ESPN games — all through natural language.
  *
- * Configuration:
- *   SQUAD_SQUARES_API  — base URL of the Squad Squares backend
- *                        (default: http://localhost:8000)
+ * Configuration (env vars):
+ *   SQUAD_SQUARES_API  — base URL of the Squad Squares backend (default: http://localhost:8000)
+ *   OPENAI_API_KEY     — OpenAI API key for ChatGPT integration
+ *   GOOGLE_API_KEY     — Google AI API key for Gemini integration
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -15,6 +16,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 const API_BASE = process.env.SQUAD_SQUARES_API || "http://localhost:8000";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || "";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -220,6 +223,80 @@ server.tool(
     }
     return {
       content: [{ type: "text", text: JSON.stringify(game, null, 2) }],
+    };
+  }
+);
+
+// -- LLM Integrations -------------------------------------------------------
+
+async function callChatGPT(prompt) {
+  if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not set");
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-5.2",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 200,
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+async function callGemini(prompt) {
+  if (!GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY not set");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${GOOGLE_API_KEY}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+server.tool(
+  "askChatGPT",
+  "Ask ChatGPT a question and post its response to the game chat",
+  {
+    gridId: z.string().describe("The grid/room ID to post the reply to"),
+    prompt: z.string().describe("The question or prompt for ChatGPT"),
+  },
+  async ({ gridId, prompt }) => {
+    const reply = await callChatGPT(prompt);
+    await api(`/grids/${gridId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ sender: "ChatGPT", content: reply }),
+    });
+    return {
+      content: [{ type: "text", text: `ChatGPT replied: ${reply}` }],
+    };
+  }
+);
+
+server.tool(
+  "askGemini",
+  "Ask Gemini a question and post its response to the game chat",
+  {
+    gridId: z.string().describe("The grid/room ID to post the reply to"),
+    prompt: z.string().describe("The question or prompt for Gemini"),
+  },
+  async ({ gridId, prompt }) => {
+    const reply = await callGemini(prompt);
+    await api(`/grids/${gridId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ sender: "Gemini", content: reply }),
+    });
+    return {
+      content: [{ type: "text", text: `Gemini replied: ${reply}` }],
     };
   }
 );

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SB Squares 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1117;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: #1a1d28;
+    border-bottom: 2px solid #ffd700;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+    color: #ffd700;
+    letter-spacing: 1px;
+  }
+
+  header h1 span { color: #e0e0e0; font-weight: 300; }
+
+  #room-select {
+    padding: 0.4rem 0.8rem;
+    background: #2a2d3a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; }
+  }
+
+  /* --- Grid --- */
+  .grid-panel { overflow-x: auto; }
+
+  .score-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: #1a1d28;
+    border-radius: 8px;
+    font-size: 1.1rem;
+  }
+
+  .score-bar .team { color: #ffd700; font-weight: 600; }
+  .score-bar .score { font-size: 1.4rem; font-weight: 700; }
+  .score-bar .status { color: #aaa; font-size: 0.85rem; }
+
+  .grid-wrapper {
+    display: inline-block;
+    min-width: fit-content;
+  }
+
+  .grid-table {
+    border-collapse: collapse;
+  }
+
+  .grid-table th, .grid-table td {
+    width: 54px;
+    height: 54px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.7rem;
+    border: 1px solid #2a2d3a;
+  }
+
+  .grid-table th {
+    background: #1a1d28;
+    color: #ffd700;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+
+  .grid-table th.corner { background: #0f1117; border-color: #0f1117; }
+
+  .grid-table td {
+    background: #1e2130;
+    cursor: pointer;
+    transition: background 0.15s;
+    aspect-ratio: 1;
+    position: relative;
+  }
+
+  .grid-table td:hover { background: #2d3050; }
+  .grid-table td.claimed {
+    background: #6c5ce7;
+    cursor: default;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+  .grid-table td.winner {
+    background: #00cec9;
+    color: #0f1117;
+    font-weight: 700;
+  }
+  .grid-table td.unavailable {
+    background: #1a1d28;
+    cursor: not-allowed;
+    color: #555;
+  }
+
+  /* --- Sidebar --- */
+  .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+  .panel {
+    background: #1a1d28;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel h2 {
+    font-size: 0.9rem;
+    color: #ffd700;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Live Scores */
+  .game-card {
+    background: #2a2d3a;
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .game-card .teams {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+  }
+
+  .game-card .game-status {
+    text-align: center;
+    color: #aaa;
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Chat */
+  #chat-messages {
+    flex: 1;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .chat-msg .chat-sender { color: #6c5ce7; font-weight: 600; }
+  .chat-msg .chat-time { color: #666; font-size: 0.7rem; margin-left: 0.4rem; }
+
+  .chat-input-row {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .chat-input-row input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    background: #2a2d3a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+
+  .chat-input-row button, .btn {
+    padding: 0.4rem 0.8rem;
+    background: #6c5ce7;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .chat-input-row button:hover, .btn:hover { background: #5a4bd6; }
+
+  /* --- Modal --- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: #1a1d28;
+    border: 2px solid #ffd700;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 340px;
+    max-width: 90vw;
+    text-align: center;
+  }
+
+  .modal h3 { color: #ffd700; margin-bottom: 1rem; }
+
+  .modal input {
+    width: 100%;
+    padding: 0.6rem;
+    margin-bottom: 1rem;
+    background: #2a2d3a;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  .modal .modal-pos { color: #aaa; font-size: 0.85rem; margin-bottom: 1rem; }
+
+  .modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .modal-actions .btn-cancel {
+    background: #444;
+  }
+
+  .loading-text {
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SB Squares <span>2026</span></h1>
+  <select id="room-select"><option value="">Loading rooms...</option></select>
+</header>
+
+<div class="main">
+  <div class="grid-panel">
+    <div class="score-bar" id="score-bar">
+      <div><span class="team" id="away-team">—</span> <span class="score" id="away-score">0</span></div>
+      <div><span class="status" id="game-status">—</span></div>
+      <div><span class="score" id="home-score">0</span> <span class="team" id="home-team">—</span></div>
+    </div>
+    <div class="grid-wrapper">
+      <table class="grid-table" id="grid-table">
+        <tbody id="grid-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel" id="scores-panel">
+      <h2>Live Scores</h2>
+      <div id="scores-list"><div class="loading-text">Loading scores...</div></div>
+    </div>
+
+    <div class="panel" style="flex:1; min-height:200px;">
+      <h2>Game Chat</h2>
+      <div id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Type a message..." maxlength="200">
+        <button id="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Claim Modal -->
+<div class="modal-overlay" id="claim-modal">
+  <div class="modal">
+    <h3>Claim Square</h3>
+    <div class="modal-pos" id="modal-pos"></div>
+    <input id="modal-name" type="text" placeholder="Your name" maxlength="30">
+    <div class="modal-actions">
+      <button class="btn" id="modal-claim">Claim</button>
+      <button class="btn btn-cancel" id="modal-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // State
+  let currentGridId = null;
+  let gridData = null;
+  let availableSet = new Set();
+  let claimedMap = {};   // "row,col" → userName
+  let winnerPos = null;
+  let chatSeq = 0;
+  let chatTimer = null;
+  let scoresTimer = null;
+  let pendingClaim = null; // {row, col}
+
+  const $ = (sel) => document.querySelector(sel);
+  const roomSelect = $("#room-select");
+  const gridBody = $("#grid-body");
+  const chatMessages = $("#chat-messages");
+  const chatInput = $("#chat-input");
+  const claimModal = $("#claim-modal");
+  const modalName = $("#modal-name");
+
+  // Restore name from localStorage
+  modalName.value = localStorage.getItem("sb_player_name") || "";
+
+  // --- API helpers ---
+  async function api(path, opts) {
+    const resp = await fetch(`/api${path}`, opts);
+    if (!resp.ok) throw new Error(`API ${resp.status}`);
+    return resp.json();
+  }
+
+  // --- Rooms ---
+  async function loadRooms() {
+    try {
+      const data = await api("/rooms");
+      const rooms = data.rooms || [];
+      roomSelect.innerHTML = rooms.length
+        ? rooms.map(r => `<option value="${r.id}">${r.name || r.id}</option>`).join("")
+        : `<option value="">No rooms available</option>`;
+      if (rooms.length) {
+        currentGridId = rooms[0].id;
+        loadGrid();
+      }
+    } catch (e) {
+      roomSelect.innerHTML = `<option value="">Error loading rooms</option>`;
+    }
+  }
+
+  roomSelect.addEventListener("change", () => {
+    currentGridId = roomSelect.value;
+    if (currentGridId) loadGrid();
+  });
+
+  // --- Grid ---
+  async function loadGrid() {
+    if (!currentGridId) return;
+
+    try {
+      const [status, avail] = await Promise.all([
+        api(`/grids/${currentGridId}`),
+        api(`/grids/${currentGridId}/availability`),
+      ]);
+
+      gridData = status;
+      winnerPos = status.currentWinnerPosition || null;
+
+      // Build availability set
+      availableSet = new Set();
+      (avail.available || []).forEach(a => availableSet.add(a.position));
+
+      // Build claimed map from grid data
+      claimedMap = {};
+      if (status.squares) {
+        status.squares.forEach(sq => {
+          if (sq.user_name) claimedMap[sq.position] = sq.user_name;
+        });
+      } else if (status.cells) {
+        status.cells.forEach(c => {
+          if (c.userName) claimedMap[c.position] = c.userName;
+        });
+      }
+
+      updateScoreBar(status);
+      renderGrid(status);
+      startChatPolling();
+    } catch (e) {
+      gridBody.innerHTML = `<tr><td colspan="11" class="loading-text">Error loading grid</td></tr>`;
+    }
+  }
+
+  function updateScoreBar(s) {
+    $("#away-team").textContent = s.awayTeam || "Away";
+    $("#away-score").textContent = s.awayScore ?? 0;
+    $("#home-team").textContent = s.homeTeam || "Home";
+    $("#home-score").textContent = s.homeScore ?? 0;
+    const parts = [];
+    if (s.period) parts.push(`P${s.period}`);
+    if (s.clock) parts.push(s.clock);
+    if (s.status) parts.push(s.status);
+    $("#game-status").textContent = parts.join(" · ") || "—";
+  }
+
+  function renderGrid(status) {
+    const homeDigits = Array.from({length:10}, (_,i) => i);
+    const awayDigits = Array.from({length:10}, (_,i) => i);
+
+    let html = "<tr><th class='corner'></th>";
+    // Top header: home team digits
+    for (let c = 0; c < 10; c++) {
+      html += `<th>${homeDigits[c]}</th>`;
+    }
+    html += "</tr>";
+
+    for (let r = 0; r < 10; r++) {
+      html += `<tr><th>${awayDigits[r]}</th>`;
+      for (let c = 0; c < 10; c++) {
+        const pos = `${r},${c}`;
+        const owner = claimedMap[pos];
+        const isWinner = winnerPos === pos;
+        const isAvailable = availableSet.has(pos);
+
+        let cls = "";
+        let content = "";
+
+        if (owner) {
+          cls = isWinner ? "claimed winner" : "claimed";
+          content = initials(owner);
+        } else if (isAvailable) {
+          cls = "";
+        } else {
+          cls = "unavailable";
+        }
+
+        html += `<td class="${cls}" data-pos="${pos}">${content}</td>`;
+      }
+      html += "</tr>";
+    }
+
+    gridBody.innerHTML = html;
+
+    // Add click handlers
+    gridBody.querySelectorAll("td:not(.claimed):not(.unavailable)").forEach(td => {
+      td.addEventListener("click", () => openClaimModal(td.dataset.pos));
+    });
+  }
+
+  function initials(name) {
+    return name.split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 3);
+  }
+
+  // --- Claim Modal ---
+  function openClaimModal(pos) {
+    pendingClaim = pos;
+    const [r, c] = pos.split(",");
+    $("#modal-pos").textContent = `Row ${r}, Column ${c}`;
+    modalName.value = localStorage.getItem("sb_player_name") || "";
+    claimModal.classList.add("active");
+    modalName.focus();
+  }
+
+  function closeClaimModal() {
+    claimModal.classList.remove("active");
+    pendingClaim = null;
+  }
+
+  $("#modal-cancel").addEventListener("click", closeClaimModal);
+  claimModal.addEventListener("click", e => {
+    if (e.target === claimModal) closeClaimModal();
+  });
+
+  $("#modal-claim").addEventListener("click", async () => {
+    const name = modalName.value.trim();
+    if (!name || !pendingClaim) return;
+
+    localStorage.setItem("sb_player_name", name);
+
+    try {
+      await api(`/grids/${currentGridId}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_name: name,
+          preferred_position: pendingClaim,
+        }),
+      });
+      closeClaimModal();
+      loadGrid();
+    } catch (e) {
+      alert("Failed to claim square. It may have been taken.");
+      loadGrid();
+      closeClaimModal();
+    }
+  });
+
+  modalName.addEventListener("keydown", e => {
+    if (e.key === "Enter") $("#modal-claim").click();
+  });
+
+  // --- Chat ---
+  function startChatPolling() {
+    if (chatTimer) clearInterval(chatTimer);
+    chatSeq = 0;
+    chatMessages.innerHTML = "";
+    pollChat();
+    chatTimer = setInterval(pollChat, 5000);
+  }
+
+  async function pollChat() {
+    if (!currentGridId) return;
+    try {
+      const data = await api(`/grids/${currentGridId}/messages?after_seq=${chatSeq}`);
+      const msgs = data.messages || [];
+      msgs.forEach(m => {
+        chatSeq = Math.max(chatSeq, m.seq || 0);
+        const div = document.createElement("div");
+        div.className = "chat-msg";
+        const time = m.ts ? new Date(m.ts * 1000).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) : "";
+        div.innerHTML = `<span class="chat-sender">${esc(m.sender)}</span><span class="chat-time">${time}</span> ${esc(m.content)}`;
+        chatMessages.appendChild(div);
+      });
+      if (msgs.length) chatMessages.scrollTop = chatMessages.scrollHeight;
+    } catch (e) { /* ignore poll errors */ }
+  }
+
+  $("#chat-send").addEventListener("click", sendChat);
+  chatInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendChat();
+  });
+
+  async function sendChat() {
+    const content = chatInput.value.trim();
+    const sender = localStorage.getItem("sb_player_name") || "Anon";
+    if (!content || !currentGridId) return;
+
+    chatInput.value = "";
+    try {
+      await api(`/grids/${currentGridId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sender, content }),
+      });
+      pollChat();
+    } catch (e) { /* ignore */ }
+  }
+
+  // --- Live Scores ---
+  async function loadScores() {
+    try {
+      const data = await api("/games/nfl");
+      const games = Array.isArray(data) ? data : (data.games || []);
+      const list = $("#scores-list");
+
+      if (!games.length) {
+        list.innerHTML = `<div class="loading-text">No games today</div>`;
+        return;
+      }
+
+      list.innerHTML = games.map(g => `
+        <div class="game-card">
+          <div class="teams">
+            <span>${esc(g.away_team || g.awayTeam || "Away")} ${g.away_score ?? g.awayScore ?? ""}</span>
+            <span>${g.home_score ?? g.homeScore ?? ""} ${esc(g.home_team || g.homeTeam || "Home")}</span>
+          </div>
+          <div class="game-status">${esc(g.status || g.game_status || "")}</div>
+        </div>
+      `).join("");
+    } catch (e) {
+      $("#scores-list").innerHTML = `<div class="loading-text">Unable to load scores</div>`;
+    }
+  }
+
+  function startScoresPolling() {
+    loadScores();
+    scoresTimer = setInterval(loadScores, 30000);
+  }
+
+  // --- Util ---
+  function esc(s) {
+    if (!s) return "";
+    const d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // --- Init ---
+  loadRooms();
+  startScoresPolling();
+})();
+</script>
+</body>
+</html>

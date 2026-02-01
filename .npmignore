@@ -1,0 +1,11 @@
+antigravity/
+browser-use/
+cline/
+demo-video/
+gemini/
+livekit/
+mcp-server/
+pipecat/
+vercel/
+.DS_Store
+*.mp4
